@@ -1,0 +1,143 @@
+signupControllers.js
+const Signup=require('../models/Signup')
+
+const signup=async(req,res)=>{
+    const {email,password}=req.body;
+    try{
+
+
+        const newSignup=new Signup({email,password});
+        await newSignup.save();
+        res.status(200).json({message:'user signup successful'})
+    }catch(error){
+        res.status(500).json({message:'error while signup'})
+    }
+
+}
+
+const getAllusers =async(req,res)=>{
+    try{
+    const users =await Signup.find();
+    res.status(200).json(users)
+    }catch(error){
+      res.status(500).json({message:"something gone Wrong", error})
+    }
+
+}
+const getuserbyid =async(req,res)=>{
+    const {id} =req.params;
+    try{
+        const user = await Signup.findById(id);
+        if(!user){
+            return res.status(404).json({message:'usernot found'})
+        }
+        res.status(200).json(user)
+    }
+    catch(error){
+        res.status(500).json({message:'internal server error',error})
+        console.log(error)
+    }
+}
+const updateUser =async(req,res)=>{
+    const {id} =req.params;
+    const {email,password} =req.body;
+    try{
+        const updateUser = await Signup.findByIdAndUpdate(id,{email,password},{new:true});
+        if(!updateUser){
+            return res.status(404).json({message:'usernot found'})
+        }
+        res.status(200).json({message:'user data updated successfully',user:updateUser})
+    }
+    catch(error){
+        res.status(500).json({message:'internal server error',error})
+    }
+}
+
+const deleteuser=async(req,res)=>{
+    const {id}=req.params;
+    try{
+        const deleteuser = await Signup.findByIdAndDelete(id);
+        if(!deleteuser){
+            return res.status(404).json({message:'usernot found'})
+        }
+        res.status(200).json({message:'user data deleted successfully'})
+    }
+    catch(error){
+        res.status(500).json({message:'internal server error',error})
+    }
+
+}
+module.exports={signup,getAllusers,getuserbyid,updateUser,deleteuser}
+
+db.js
+const mongoose=require('mongoose')
+
+const connectdb =async() =>{
+    try{
+        await mongoose.connect(process.env.MONGODB_URI,{
+            useNewUrlParser:true,
+            useUnifiedTopology:true,
+        }
+    );
+    console.log("connected to mongodb successfully");
+
+    }catch(error){
+        console.log("error connecting databse",error)
+    }
+};
+
+module.exports=connectdb;
+Signup.js 
+const mongoose=require('mongoose')
+const Schema =mongoose.Schema;
+const SignupSchema =new Schema({
+    email:{
+        type:String,
+        required:true
+    },
+    password:{
+        type:String
+    }
+});
+
+module.exports=mongoose.model('Signup',SignupSchema)
+
+index.js
+const dotenv=require('dotenv').config();
+const signupRoutes = require('./routes/signupRoutes');
+
+
+const express=require("express")
+const app=express();
+const connectdb=require('./db/db')
+
+
+app.use(express.json());
+
+connectdb();
+
+app.use("/api",signupRoutes)
+
+const PORT=process.env.PORT;
+
+app.listen(PORT,()=>{
+    console.log('server is running on port 3001')
+})
+
+signuproutes.js
+const express=require('express');
+const router=express.Router();
+
+const {signup,getAllusers, getuserbyid, updateUser, deleteuser}=require('../controllers/signupControllers')
+
+router.post('/signup',signup);
+router.get('/signup',getAllusers);
+router.get('/signup/:id',getuserbyid);
+router.put('/signup/:id',updateUser);
+router.delete('/signup/:id',deleteuser);
+
+module.exports=router;
+
+.env
+PORT=3001
+MONGODB_URI=mongodb://127.0.0.1:27017/
